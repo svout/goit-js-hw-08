@@ -64,49 +64,58 @@ const images = [
   },
 ];
 
-const galleryContainer = document.querySelector('.gallery');
+const galleryList = document.querySelector('.gallery');
 
-  const galleryMarkup = images
-    .map(
-      ({ preview, original, description }) => `
-      <li class="gallery-item">
-        <a class="gallery-link" href="${original}">
-          <img
-            class="gallery-image"
-            src="${preview}"
-            data-source="${original}"
-            alt="${description}"
-          />
-        </a>
-      </li>`
-    )
-    .join('');
+function createGallery(imagesArray) {
+  const galleryItems = imagesArray.map(image => {
+    const listItem = document.createElement('li');
+    listItem.classList.add('gallery-item');
+    const link = document.createElement('a');
+    link.classList.add('gallery-link');
+    link.href = image.original;
+    const imageElement = document.createElement('img');
+    imageElement.classList.add('gallery-image');
+    imageElement.src = image.preview;
+    imageElement.alt = image.description;
+    imageElement.dataset.source = image.original;
+    link.appendChild(imageElement);
+    listItem.appendChild(link);
+    return listItem;
+  });
+  galleryList.append(...galleryItems);
+}
 
-  galleryContainer.innerHTML = galleryMarkup;
+createGallery(images);
+galleryList.addEventListener('click', onGalleryItemClick);
 
-  galleryContainer.addEventListener('click', onGalleryItemClick);
+function onGalleryItemClick(event) {
+event.preventDefault();
 
-  function onGalleryItemClick(event) {
-    event.preventDefault();
+if (event.target.nodeName !== 'IMG') {
+  return;
+}
 
-    const target = event.target;
+const largeImageURL = event.target.dataset.source;
+const largeAlt = event.target.alt;
 
-    if (target.nodeName !== 'IMG') return;
+const instance = basicLightbox.create(`<img src="${largeImageURL}" class="largeImage" alt="${largeAlt}">`, {
+  onShow: (instance) => {
 
-    const largeImageUrl = target.dataset.source;
-
-    const instance = basicLightbox.create(`
-      <img src="${largeImageUrl}" width="800" height="600">
-    `);
-
-    instance.show();
-
-    document.addEventListener('keydown', onKeyPress);
-
-    function onKeyPress(event) {
-      if (event.key === 'Escape') {
+    const onKeyUp = (event) => {
+      if (event.code === 'Escape') {
         instance.close();
-        document.removeEventListener('keydown', onKeyPress);
       }
-    }
+    };
+
+    window.addEventListener('keyup', onKeyUp);
+    instance.__onKeyUp = onKeyUp;
+  },
+  onClose: (instance) => {
+
+    window.removeEventListener('keyup', instance.__onKeyUp);
   }
+  
+});
+
+instance.show();
+}
